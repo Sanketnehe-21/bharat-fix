@@ -3,11 +3,19 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Camera, MapPin, Filter, TrendingUp, AlertCircle, CheckCircle, Clock, BarChart3, Users, Target } from "lucide-react"
-
-// --- Placeholder Components for ShadCN UI ---
-// These are included to make the component previewable.
-// In a real Next.js app, you would install and import these from your UI library.
-
+import type { ReactNode } from 'react';
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  children: ReactNode;
+  asChild?: boolean;
+}
+const Button = ({ children, className, asChild, ...props }: ButtonProps) => {
+  const Comp = asChild ? 'div' : 'button';
+  return (
+    <Comp className={className} {...props}>
+      {children}
+    </Comp>
+  );
+};
 const Button = ({ children, className, asChild, ...props }) => {
   const Comp = asChild ? 'div' : 'button';
   return <Comp className={className} {...props}>{children}</Comp>;
