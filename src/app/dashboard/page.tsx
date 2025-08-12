@@ -4,8 +4,6 @@ import React, { useState, ReactNode } from "react"
 import Link from "next/link"
 import { Camera, MapPin, TrendingUp, AlertCircle, CheckCircle, Clock, BarChart3 } from "lucide-react"
 
-// --- Component Definitions ---
-
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
   asChild?: boolean;
@@ -15,10 +13,6 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 const Button = ({ children, className, asChild, ...props }: ButtonProps) => {
   const Comp = asChild ? 'div' : 'button';
-  // We cast props to `any` here to resolve the TypeScript error.
-  // This is because when `asChild` is true, Comp is a 'div', but `props` are typed
-  // as button attributes. In this application, we are not passing conflicting props,
-  // so this is a safe and pragmatic way to fix the type error without a major refactor.
   return (
     <Comp className={className} {...(props as any)}>
       {children}
@@ -33,27 +27,25 @@ const CardContent = ({ children, className, ...props }: { children: ReactNode, c
 const CardDescription = ({ children, className, ...props }: { children: ReactNode, className?: string }) => <p className={className} {...props}>{children}</p>;
 const Badge = ({ children, className, ...props }: { children: ReactNode, className?: string }) => <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${className}`} {...props}>{children}</span>;
 
-// A more functional placeholder for Select components
 const Select = ({ children, value, onValueChange }: { children: ReactNode[], value: string, onValueChange: (value: string) => void }) => {
     const [isOpen, setIsOpen] = useState(false);
     
-    // This is a simplified implementation. It finds the label for the currently selected value.
     const getSelectedLabel = () => {
         let selectedLabel = '';
-        React.Children.forEach((children[1] as React.ReactElement)?.props.children, (item: React.ReactElement) => {
-            if (item.props.value === value) {
-                // Assuming the label is the child of the SelectItem
-                selectedLabel = item.props.children;
+        React.Children.forEach((children[1] as React.ReactElement)?.props.children, (item: unknown) => {
+            if (React.isValidElement(item) && item.props && typeof item.props === 'object' && 'value' in item.props) {
+                const reactItem = item as React.ReactElement<{ value: string; children: ReactNode }>;
+                if (reactItem.props.value === value) {
+                    selectedLabel = reactItem.props.children as string;
+                }
             }
         });
-        // Fallback to placeholder if no value is selected or found
         return selectedLabel || (children[0] as React.ReactElement).props.children;
     };
 
     return (
         <div className="relative">
             <div onClick={() => setIsOpen(!isOpen)} className="cursor-pointer">
-                {/* Clone the trigger and pass the current value to be displayed */}
                 {React.cloneElement(children[0] as React.ReactElement, { children: getSelectedLabel() })}
             </div>
             {isOpen && (
@@ -61,15 +53,18 @@ const Select = ({ children, value, onValueChange }: { children: ReactNode[], val
                     onMouseLeave={() => setIsOpen(false)}
                     className="absolute z-10 mt-1 w-full border rounded-md shadow-lg bg-white dark:bg-gray-800"
                 >
-                    {/* Map over SelectItems and add onClick handlers */}
-                    {React.Children.map((children[1] as React.ReactElement).props.children, (item: React.ReactElement) => 
-                        React.cloneElement(item, {
-                            onClick: () => {
-                                onValueChange(item.props.value);
-                                setIsOpen(false);
-                            }
-                        })
-                    )}
+                    {React.Children.map((children[1] as React.ReactElement).props.children, (item: unknown) => {
+                        if (React.isValidElement(item)) {
+                            const reactItem = item as React.ReactElement<{ value: string; onClick?: () => void }>;
+                            return React.cloneElement(reactItem, {
+                                onClick: () => {
+                                    onValueChange(reactItem.props.value);
+                                    setIsOpen(false);
+                                }
+                            });
+                        }
+                        return item;
+                    })}
                 </div>
             )}
         </div>
@@ -86,7 +81,6 @@ export default function DashboardPage() {
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [selectedStatus, setSelectedStatus] = useState("all")
 
-  // --- Data for the Dashboard ---
   const stats = [
     { title: "Issues Reported", value: "247", change: "+12%", changeType: "increase", icon: AlertCircle, color: "from-red-500 to-pink-500" },
     { title: "Issues Resolved", value: "189", change: "+8%", changeType: "increase", icon: CheckCircle, color: "from-green-500 to-emerald-500" },
@@ -117,7 +111,6 @@ export default function DashboardPage() {
     { value: "resolved", label: "Resolved", color: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" }
   ];
 
-  // --- Helper Functions ---
   const getStatusBadge = (status: string) => {
     const statusConfig = statuses.find(s => s.value === status);
     if (!statusConfig) return null;
@@ -138,10 +131,8 @@ export default function DashboardPage() {
     return categoryConfig?.icon || "📋";
   };
 
-  // --- Filtering Logic ---
   const filteredIssues = issues.filter(issue => {
     const categoryMatch = selectedCategory === "all" || issue.category === selectedCategory;
-    // FIX: The original code had a typo here (statusMatch was compared to itself).
     const statusMatch = selectedStatus === "all" || issue.status === selectedStatus;
     return categoryMatch && statusMatch;
   });
@@ -149,7 +140,6 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <div className="text-center mb-10">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full mb-4 shadow-lg">
             <BarChart3 className="h-8 w-8 text-white" />
@@ -162,7 +152,6 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
           {stats.map((stat, index) => (
             <Card key={index} className="border-0 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 bg-white dark:bg-gray-800">
@@ -185,7 +174,6 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* Issues Section */}
         <Card className="border-0 rounded-xl shadow-lg bg-white dark:bg-gray-800">
           <CardHeader className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -288,7 +276,6 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
         
-        {/* Quick Actions */}
         <div className="mt-10 text-center">
           <Button size="lg" className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 rounded-lg px-6 py-3" asChild>
             <Link href="/report" className="flex items-center justify-center">
