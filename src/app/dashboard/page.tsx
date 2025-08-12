@@ -1,13 +1,21 @@
 "use client"
-
+import React from "react"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Camera, MapPin, Filter, TrendingUp, AlertCircle, CheckCircle, Clock, BarChart3, Users, Target } from "lucide-react"
 import type { ReactNode } from 'react';
+
+// --- Component Definitions ---
+
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
   asChild?: boolean;
+  // Adding variant and size to the interface, although they are not used in the component logic itself
+  // They are passed down with ...props, and styling is handled by className
+  variant?: string; 
+  size?: string;
 }
+
 const Button = ({ children, className, asChild, ...props }: ButtonProps) => {
   const Comp = asChild ? 'div' : 'button';
   return (
@@ -16,31 +24,54 @@ const Button = ({ children, className, asChild, ...props }: ButtonProps) => {
     </Comp>
   );
 };
-const Button = ({ children, className, asChild, ...props }) => {
-  const Comp = asChild ? 'div' : 'button';
-  return <Comp className={className} {...props}>{children}</Comp>;
-};
-const Card = ({ children, className, ...props }) => <div className={className} {...props}>{children}</div>;
-const CardHeader = ({ children, className, ...props }) => <div className={className} {...props}>{children}</div>;
-const CardTitle = ({ children, className, ...props }) => <h3 className={className}>{children}</h3>;
-const CardContent = ({ children, className, ...props }) => <div className={className} {...props}>{children}</div>;
-const CardDescription = ({ children, className, ...props }) => <p className={className}>{children}</p>;
-const Badge = ({ children, className, ...props }) => <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${className}`} {...props}>{children}</span>;
+
+const Card = ({ children, className, ...props }: { children: ReactNode, className?: string }) => <div className={className} {...props}>{children}</div>;
+const CardHeader = ({ children, className, ...props }: { children: ReactNode, className?: string }) => <div className={className} {...props}>{children}</div>;
+const CardTitle = ({ children, className, ...props }: { children: ReactNode, className?: string }) => <h3 className={className}>{children}</h3>;
+const CardContent = ({ children, className, ...props }: { children: ReactNode, className?: string }) => <div className={className} {...props}>{children}</div>;
+const CardDescription = ({ children, className, ...props }: { children: ReactNode, className?: string }) => <p className={className}>{children}</p>;
+const Badge = ({ children, className, ...props }: { children: ReactNode, className?: string }) => <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${className}`} {...props}>{children}</span>;
 
 // Placeholder for Select components
-const Select = ({ children, value, onValueChange }) => {
+const Select = ({ children, value, onValueChange }: { children: ReactNode[], value: string, onValueChange: (value: string) => void }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const trigger = children[0];
+  const content = children[1];
+
+  // This is a simplified implementation. A real one would be more robust.
+  // It finds the label for the currently selected value to display in the trigger.
+  const selectedLabel = ((((content as any)?.props?.children as any[]) || []).find(item => item.props.value === value) as any)?.props?.children || (trigger as any)?.props?.children;
+
   return (
     <div className="relative">
-      <div onClick={() => setIsOpen(!isOpen)}>{children[0]}</div>
-      {isOpen && <div onMouseLeave={() => setIsOpen(false)}>{children[1]}</div>}
+      <div onClick={() => setIsOpen(!isOpen)} className="cursor-pointer">
+        {/* We clone the trigger to inject the selected value display */}
+        {React.cloneElement(trigger as any, { children: selectedLabel })}
+      </div>
+      {isOpen && (
+        <div 
+          onMouseLeave={() => setIsOpen(false)}
+          className="absolute z-10 mt-1 w-full border rounded-md shadow-lg bg-white dark:bg-gray-800"
+        >
+          {/* We need to handle clicks on items to set the value and close the dropdown */}
+          {React.Children.map((content as any)?.props?.children, (child: any) => 
+            React.cloneElement(child, {
+              onClick: () => {
+                onValueChange(child.props.value);
+                setIsOpen(false);
+              }
+            })
+          )}
+        </div>
+      )}
     </div>
   );
 };
-const SelectTrigger = ({ children, className }) => <div className={`cursor-pointer border rounded-md px-3 py-2 ${className}`}>{children}</div>;
-const SelectValue = ({ placeholder }) => <span>{placeholder}</span>;
-const SelectContent = ({ children, className }) => <div className={`absolute z-10 mt-1 w-full border rounded-md shadow-lg ${className}`}>{children}</div>;
-const SelectItem = ({ children, value, className }) => <div className={`cursor-pointer px-3 py-2 ${className}`}>{children}</div>;
+
+const SelectTrigger = ({ children, className }: { children: ReactNode, className?: string }) => <div className={`border rounded-md px-3 py-2 ${className}`}>{children}</div>;
+const SelectValue = ({ placeholder }: { placeholder: string }) => <span>{placeholder}</span>;
+const SelectContent = ({ children, className }: { children: ReactNode, className?: string }) => <div className={`absolute z-10 mt-1 w-full border rounded-md shadow-lg ${className}`}>{children}</div>;
+const SelectItem = ({ children, value, className, onClick }: { children: ReactNode, value: string, className?: string, onClick?: () => void }) => <div onClick={onClick} className={`cursor-pointer px-3 py-2 ${className}`}>{children}</div>;
 
 
 export default function DashboardPage() {
@@ -79,13 +110,13 @@ export default function DashboardPage() {
   ];
 
   // --- Helper Functions ---
-  const getStatusBadge = (status) => {
+  const getStatusBadge = (status: string) => {
     const statusConfig = statuses.find(s => s.value === status);
     if (!statusConfig) return null;
     return <Badge className={`${statusConfig.color} border-none`}>{statusConfig.label}</Badge>;
   };
 
-  const getPriorityBadge = (priority) => {
+  const getPriorityBadge = (priority: 'high' | 'medium' | 'low') => {
     const priorityConfig = {
       high: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
       medium: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
@@ -94,7 +125,7 @@ export default function DashboardPage() {
     return <Badge className={`${priorityConfig[priority]} border-none`}>{priority.charAt(0).toUpperCase() + priority.slice(1)}</Badge>;
   };
 
-  const getCategoryIcon = (category) => {
+  const getCategoryIcon = (category: string) => {
     const categoryConfig = categories.find(c => c.value === category);
     return categoryConfig?.icon || "📋";
   };
@@ -102,12 +133,12 @@ export default function DashboardPage() {
   // --- Filtering Logic ---
   const filteredIssues = issues.filter(issue => {
     const categoryMatch = selectedCategory === "all" || issue.category === selectedCategory;
-    const statusMatch = selectedStatus === "all" || issue.status === selectedStatus;
+    const statusMatch = selectedStatus === "all" || issue.status === statusMatch;
     return categoryMatch && statusMatch;
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-black py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-black py-8 px-4 sm:px-6 lg:px-8 font-sans">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-10">
@@ -123,7 +154,6 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats Cards */}
-        {/* Responsive Grid: Stacks on mobile, 2 cols on tablet, 3 on desktop */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
           {stats.map((stat, index) => (
             <Card key={index} className="border-0 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 bg-white dark:bg-gray-800">
@@ -149,7 +179,6 @@ export default function DashboardPage() {
         {/* Issues Section */}
         <Card className="border-0 rounded-xl shadow-lg bg-white dark:bg-gray-800">
           <CardHeader className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
-            {/* Responsive Layout: Stacks filters below title on mobile */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
                 <CardTitle className="flex items-center space-x-2 text-black dark:text-white text-xl">
@@ -161,13 +190,12 @@ export default function DashboardPage() {
                 </CardDescription>
               </div>
               
-              {/* Filters: Stack on mobile, row on larger screens */}
               <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
                 <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                   <SelectTrigger className="w-full sm:w-48 bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-black dark:text-white">
                     <SelectValue placeholder="Category" />
                   </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                  <SelectContent>
                     {categories.map((category) => (
                       <SelectItem key={category.value} value={category.value} className="text-black dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
                         <div className="flex items-center space-x-2">
@@ -183,7 +211,7 @@ export default function DashboardPage() {
                   <SelectTrigger className="w-full sm:w-48 bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-black dark:text-white">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                  <SelectContent>
                     {statuses.map((status) => (
                       <SelectItem key={status.value} value={status.value} className="text-black dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
                         <span>{status.label}</span>
@@ -201,18 +229,16 @@ export default function DashboardPage() {
                 filteredIssues.map((issue) => (
                   <Card key={issue.id} className="border border-gray-200 dark:border-gray-700 hover:border-yellow-500/50 transition-colors duration-200 bg-white dark:bg-gray-900/50 rounded-lg">
                     <CardContent className="p-4">
-                      {/* Responsive Issue Card: Stacks vertically on mobile */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="flex-1 min-w-0"> {/* min-w-0 prevents text overflow */}
+                        <div className="flex-1 min-w-0">
                           <div className="flex items-start space-x-4">
                             <div className="text-2xl mt-1 hidden sm:block">{getCategoryIcon(issue.category)}</div>
                             <div className="flex-1">
                               <h3 className="font-semibold text-black dark:text-white text-md sm:text-lg mb-2 truncate">{issue.title}</h3>
                               <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-3">
                                 {getStatusBadge(issue.status)}
-                                {getPriorityBadge(issue.priority)}
+                                {getPriorityBadge(issue.priority as 'high' | 'medium' | 'low')}
                               </div>
-                              {/* Responsive Meta Info: Stacks on mobile for readability */}
                               <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 text-xs sm:text-sm text-gray-500 dark:text-gray-400 space-y-1 sm:space-y-0">
                                 <div className="flex items-center">
                                   <MapPin className="h-4 w-4 mr-1.5" />
@@ -234,7 +260,7 @@ export default function DashboardPage() {
                         </div>
                         
                         <div className="flex-shrink-0 self-start sm:self-center">
-                          <Button variant="outline" size="sm" className="text-yellow-600 border-yellow-500 hover:bg-yellow-500 hover:text-white dark:text-yellow-400 dark:border-yellow-400 dark:hover:bg-yellow-400 dark:hover:text-black rounded-md">
+                          <Button variant="outline" size="sm" className="text-yellow-600 border-yellow-500 hover:bg-yellow-500 hover:text-white dark:text-yellow-400 dark:border-yellow-400 dark:hover:bg-yellow-400 dark:hover:text-black rounded-md px-3 py-1 text-sm">
                             View Details
                           </Button>
                         </div>
@@ -255,7 +281,7 @@ export default function DashboardPage() {
         
         {/* Quick Actions */}
         <div className="mt-10 text-center">
-          <Button size="lg" className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 rounded-lg" asChild>
+          <Button size="lg" className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 rounded-lg px-6 py-3" asChild>
             <Link href="/report" className="flex items-center justify-center">
               <Camera className="mr-2 h-5 w-5" />
               Report New Issue
