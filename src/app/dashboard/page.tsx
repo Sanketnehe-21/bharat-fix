@@ -1,25 +1,26 @@
 "use client"
-import React from "react"
-import { useState, useEffect } from "react"
+
+import React, { useState, ReactNode } from "react"
 import Link from "next/link"
-import { Camera, MapPin, Filter, TrendingUp, AlertCircle, CheckCircle, Clock, BarChart3, Users, Target } from "lucide-react"
-import type { ReactNode } from 'react';
+import { Camera, MapPin, TrendingUp, AlertCircle, CheckCircle, Clock, BarChart3 } from "lucide-react"
 
 // --- Component Definitions ---
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
   asChild?: boolean;
-  // Adding variant and size to the interface, although they are not used in the component logic itself
-  // They are passed down with ...props, and styling is handled by className
   variant?: string; 
   size?: string;
 }
 
 const Button = ({ children, className, asChild, ...props }: ButtonProps) => {
   const Comp = asChild ? 'div' : 'button';
+  // We cast props to `any` here to resolve the TypeScript error.
+  // This is because when `asChild` is true, Comp is a 'div', but `props` are typed
+  // as button attributes. In this application, we are not passing conflicting props,
+  // so this is a safe and pragmatic way to fix the type error without a major refactor.
   return (
-    <Comp className={className} {...props}>
+    <Comp className={className} {...(props as any)}>
       {children}
     </Comp>
   );
@@ -27,50 +28,57 @@ const Button = ({ children, className, asChild, ...props }: ButtonProps) => {
 
 const Card = ({ children, className, ...props }: { children: ReactNode, className?: string }) => <div className={className} {...props}>{children}</div>;
 const CardHeader = ({ children, className, ...props }: { children: ReactNode, className?: string }) => <div className={className} {...props}>{children}</div>;
-const CardTitle = ({ children, className, ...props }: { children: ReactNode, className?: string }) => <h3 className={className}>{children}</h3>;
+const CardTitle = ({ children, className, ...props }: { children: ReactNode, className?: string }) => <h3 className={className} {...props}>{children}</h3>;
 const CardContent = ({ children, className, ...props }: { children: ReactNode, className?: string }) => <div className={className} {...props}>{children}</div>;
-const CardDescription = ({ children, className, ...props }: { children: ReactNode, className?: string }) => <p className={className}>{children}</p>;
+const CardDescription = ({ children, className, ...props }: { children: ReactNode, className?: string }) => <p className={className} {...props}>{children}</p>;
 const Badge = ({ children, className, ...props }: { children: ReactNode, className?: string }) => <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${className}`} {...props}>{children}</span>;
 
-// Placeholder for Select components
+// A more functional placeholder for Select components
 const Select = ({ children, value, onValueChange }: { children: ReactNode[], value: string, onValueChange: (value: string) => void }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const trigger = children[0];
-  const content = children[1];
+    const [isOpen, setIsOpen] = useState(false);
+    
+    // This is a simplified implementation. It finds the label for the currently selected value.
+    const getSelectedLabel = () => {
+        let selectedLabel = '';
+        React.Children.forEach((children[1] as React.ReactElement)?.props.children, (item: React.ReactElement) => {
+            if (item.props.value === value) {
+                // Assuming the label is the child of the SelectItem
+                selectedLabel = item.props.children;
+            }
+        });
+        // Fallback to placeholder if no value is selected or found
+        return selectedLabel || (children[0] as React.ReactElement).props.children;
+    };
 
-  // This is a simplified implementation. A real one would be more robust.
-  // It finds the label for the currently selected value to display in the trigger.
-  const selectedLabel = ((((content as any)?.props?.children as any[]) || []).find(item => item.props.value === value) as any)?.props?.children || (trigger as any)?.props?.children;
-
-  return (
-    <div className="relative">
-      <div onClick={() => setIsOpen(!isOpen)} className="cursor-pointer">
-        {/* We clone the trigger to inject the selected value display */}
-        {React.cloneElement(trigger as any, { children: selectedLabel })}
-      </div>
-      {isOpen && (
-        <div 
-          onMouseLeave={() => setIsOpen(false)}
-          className="absolute z-10 mt-1 w-full border rounded-md shadow-lg bg-white dark:bg-gray-800"
-        >
-          {/* We need to handle clicks on items to set the value and close the dropdown */}
-          {React.Children.map((content as any)?.props?.children, (child: any) => 
-            React.cloneElement(child, {
-              onClick: () => {
-                onValueChange(child.props.value);
-                setIsOpen(false);
-              }
-            })
-          )}
+    return (
+        <div className="relative">
+            <div onClick={() => setIsOpen(!isOpen)} className="cursor-pointer">
+                {/* Clone the trigger and pass the current value to be displayed */}
+                {React.cloneElement(children[0] as React.ReactElement, { children: getSelectedLabel() })}
+            </div>
+            {isOpen && (
+                <div 
+                    onMouseLeave={() => setIsOpen(false)}
+                    className="absolute z-10 mt-1 w-full border rounded-md shadow-lg bg-white dark:bg-gray-800"
+                >
+                    {/* Map over SelectItems and add onClick handlers */}
+                    {React.Children.map((children[1] as React.ReactElement).props.children, (item: React.ReactElement) => 
+                        React.cloneElement(item, {
+                            onClick: () => {
+                                onValueChange(item.props.value);
+                                setIsOpen(false);
+                            }
+                        })
+                    )}
+                </div>
+            )}
         </div>
-      )}
-    </div>
-  );
+    );
 };
 
 const SelectTrigger = ({ children, className }: { children: ReactNode, className?: string }) => <div className={`border rounded-md px-3 py-2 ${className}`}>{children}</div>;
 const SelectValue = ({ placeholder }: { placeholder: string }) => <span>{placeholder}</span>;
-const SelectContent = ({ children, className }: { children: ReactNode, className?: string }) => <div className={`absolute z-10 mt-1 w-full border rounded-md shadow-lg ${className}`}>{children}</div>;
+const SelectContent = ({ children, className }: { children: ReactNode, className?: string }) => <div className={className}>{children}</div>;
 const SelectItem = ({ children, value, className, onClick }: { children: ReactNode, value: string, className?: string, onClick?: () => void }) => <div onClick={onClick} className={`cursor-pointer px-3 py-2 ${className}`}>{children}</div>;
 
 
@@ -133,12 +141,13 @@ export default function DashboardPage() {
   // --- Filtering Logic ---
   const filteredIssues = issues.filter(issue => {
     const categoryMatch = selectedCategory === "all" || issue.category === selectedCategory;
-    const statusMatch = selectedStatus === "all" || issue.status === statusMatch;
+    // FIX: The original code had a typo here (statusMatch was compared to itself).
+    const statusMatch = selectedStatus === "all" || issue.status === selectedStatus;
     return categoryMatch && statusMatch;
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-black py-8 px-4 sm:px-6 lg:px-8 font-sans">
+    <div className="min-h-screen bg-gray-50 dark:bg-black py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-10">
@@ -214,7 +223,7 @@ export default function DashboardPage() {
                   <SelectContent>
                     {statuses.map((status) => (
                       <SelectItem key={status.value} value={status.value} className="text-black dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
-                        <span>{status.label}</span>
+                        {status.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -227,7 +236,7 @@ export default function DashboardPage() {
             <div className="space-y-4">
               {filteredIssues.length > 0 ? (
                 filteredIssues.map((issue) => (
-                  <Card key={issue.id} className="border border-gray-200 dark:border-gray-700 hover:border-yellow-500/50 transition-colors duration-200 bg-white dark:bg-gray-900/50 rounded-lg">
+                  <Card key={issue.id} className="border border-gray-200 dark:border-gray-700 hover:border-yellow-500/50 transition-colors duration-200 bg-white/50 dark:bg-gray-900/50 rounded-lg">
                     <CardContent className="p-4">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex-1 min-w-0">
