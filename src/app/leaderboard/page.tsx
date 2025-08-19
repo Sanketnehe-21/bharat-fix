@@ -3,8 +3,7 @@
 import React, { useState } from "react"
 import { Search, Trophy, Medal, Award, TrendingUp, Users, MapPin, BarChart3 } from "lucide-react"
 
-// --- Placeholder Components for ShadCN UI ---
-const Input = (props) => <input {...props} />;
+const Input = (props: React.InputHTMLAttributes<HTMLInputElement>) => <input {...props} />;
 const Card = ({ children, className, ...props }) => <div className={className} {...props}>{children}</div>;
 const CardHeader = ({ children, className, ...props }) => <div className={className} {...props}>{children}</div>;
 const CardTitle = ({ children, className, ...props }) => <h2 className={className}>{children}</h2>;
