@@ -87,7 +87,7 @@ const Select = ({ children, value, onValueChange }: { children: ReactNode, value
           className="absolute z-10 mt-1 w-full border rounded-md shadow-lg bg-white dark:bg-gray-800"
         >
           {React.isValidElement<{ children?: ReactNode }>(contentElement)
-            ? React.Children.map(contentElement.props.children, (item: unknown) => {
+            ? React.Children.map(contentElement.props.children, (item: React.ReactNode) => {
               if (React.isValidElement<{ value: string; onClick?: () => void }>(item)) {
                 return React.cloneElement(item, {
                   onClick: () => {
