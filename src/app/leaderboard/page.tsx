@@ -1,22 +1,70 @@
 "use client"
 
-import React, { useState } from "react"
-import { Search, Trophy, Medal, Award, TrendingUp, Users, MapPin, BarChart3 } from "lucide-react"
+import React, { useState, ReactNode } from "react"
+import { Search, Trophy, Award, Users, MapPin } from "lucide-react"
+
+interface DivProps extends React.HTMLAttributes<HTMLDivElement> {
+  children: ReactNode;
+  className?: string;
+}
+
+interface HeadingProps extends React.HTMLAttributes<HTMLHeadingElement> {
+  children: ReactNode;
+  className?: string;
+}
+
+interface ParagraphProps extends React.HTMLAttributes<HTMLParagraphElement> {
+  children: ReactNode;
+  className?: string;
+}
+
+interface SpanProps extends React.HTMLAttributes<HTMLSpanElement> {
+  children: ReactNode;
+  className?: string;
+}
+
+interface TabsProps {
+  children: ReactNode;
+  value: string;
+  onValueChange?: (value: string) => void;
+  className?: string;
+}
+
+interface TabsListProps {
+  children: ReactNode;
+  className?: string;
+  activeTab?: string;
+  setActiveTab?: (value: string) => void;
+}
+
+interface TabsTriggerProps {
+  children: ReactNode;
+  value: string;
+  className?: string;
+  activeTab?: string;
+  setActiveTab?: (value: string) => void;
+}
+
+interface TabsContentProps {
+  children: ReactNode;
+  value: string;
+}
 
 const Input = (props: React.InputHTMLAttributes<HTMLInputElement>) => <input {...props} />;
-const Card = ({ children, className, ...props }) => <div className={className} {...props}>{children}</div>;
-const CardHeader = ({ children, className, ...props }) => <div className={className} {...props}>{children}</div>;
-const CardTitle = ({ children, className, ...props }) => <h2 className={className}>{children}</h2>;
-const CardContent = ({ children, className, ...props }) => <div className={className} {...props}>{children}</div>;
-const CardDescription = ({ children, className, ...props }) => <p className={className}>{children}</p>;
-const Badge = ({ children, className, ...props }) => <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${className}`} {...props}>{children}</span>;
+const Card = ({ children, className, ...props }: DivProps) => <div className={className} {...props}>{children}</div>;
+const CardHeader = ({ children, className, ...props }: DivProps) => <div className={className} {...props}>{children}</div>;
+const CardTitle = ({ children, className, ...props }: HeadingProps) => <h2 className={className} {...props}>{children}</h2>;
+const CardContent = ({ children, className, ...props }: DivProps) => <div className={className} {...props}>{children}</div>;
+const CardDescription = ({ children, className, ...props }: ParagraphProps) => <p className={className} {...props}>{children}</p>;
+const Badge = ({ children, className, ...props }: SpanProps) => <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${className}`} {...props}>{children}</span>;
 
-// Placeholder for Tabs components
-const Tabs = ({ children, value, onValueChange }) => (
-  <div>
+const Tabs = ({ children, value, onValueChange, ...props }: TabsProps) => (
+  <div {...props}>
     {React.Children.map(children, child => {
+      if (!React.isValidElement(child)) return null;
+
       if (child.type === TabsList) {
-        return React.cloneElement(child, { activeTab: value, setActiveTab: onValueChange });
+        return React.cloneElement(child as React.ReactElement<TabsListProps>, { activeTab: value, setActiveTab: onValueChange });
       }
       if (child.type === TabsContent && child.props.value === value) {
         return child;
@@ -25,22 +73,29 @@ const Tabs = ({ children, value, onValueChange }) => (
     })}
   </div>
 );
-const TabsList = ({ children, className, activeTab, setActiveTab }) => (
+
+const TabsList = ({ children, className, activeTab, setActiveTab }: TabsListProps) => (
   <div className={className}>
-    {React.Children.map(children, child => React.cloneElement(child, { activeTab, setActiveTab }))}
+    {React.Children.map(children, child => {
+      if (React.isValidElement(child)) {
+        return React.cloneElement(child as React.ReactElement<TabsTriggerProps>, { activeTab, setActiveTab });
+      }
+      return null;
+    })}
   </div>
 );
-const TabsTrigger = ({ children, value, className, activeTab, setActiveTab }) => (
+
+const TabsTrigger = ({ children, value, className, activeTab, setActiveTab }: TabsTriggerProps) => (
   <button
-    onClick={() => setActiveTab(value)}
+    onClick={() => setActiveTab?.(value)}
     data-state={activeTab === value ? 'active' : 'inactive'}
     className={className}
   >
     {children}
   </button>
 );
-const TabsContent = ({ children, value }) => <div>{children}</div>;
 
+const TabsContent = ({ children }: TabsContentProps) => <div>{children}</div>;
 
 export default function LeaderboardPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -75,21 +130,21 @@ export default function LeaderboardPage() {
     { rank: 5, name: "Kiran Rao", constituency: "Hyderabad Central", party: "TRS", points: 3340, issues: 19 },
   ]
 
-  const getRankIcon = (rank) => {
+  const getRankIcon = (rank: number) => {
     if (rank === 1) return "🥇"
     if (rank === 2) return "🥈"
     if (rank === 3) return "🥉"
     return `#${rank}`
   }
 
-  const getRankStyle = (rank) => {
+  const getRankStyle = (rank: number) => {
     if (rank === 1) return "bg-gradient-to-r from-yellow-100 to-yellow-200 dark:from-yellow-900/30 dark:to-yellow-800/30 border-yellow-300 dark:border-yellow-700"
     if (rank === 2) return "bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-900/30 dark:to-gray-800/30 border-gray-300 dark:border-gray-700"
     if (rank === 3) return "bg-gradient-to-r from-orange-100 to-orange-200 dark:from-orange-900/30 dark:to-orange-800/30 border-orange-300 dark:border-orange-700"
     return "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
   }
 
-  const filterData = (data, query) => {
+  const filterData = (data: any[], query: string) => {
     if (!query) return data
     return data.filter(item =>
       item.name.toLowerCase().includes(query.toLowerCase()) ||
@@ -141,7 +196,7 @@ export default function LeaderboardPage() {
   const renderNeighborhoodsTable = () => (
     <div className="space-y-4">
       {filterData(neighborhoodsData, searchQuery).map((neighborhood) => (
-         <Card
+        <Card
           key={neighborhood.rank}
           className={`transition-all duration-300 hover:shadow-xl cursor-pointer border hover:border-blue-400 dark:hover:border-blue-600 rounded-xl ${getRankStyle(neighborhood.rank)}`}
         >
@@ -196,7 +251,7 @@ export default function LeaderboardPage() {
                       <MapPin className="h-4 w-4 mr-1.5" />
                       <span className="truncate">{mla.constituency}</span>
                     </div>
-                     <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border-none mt-1 sm:mt-0">
+                    <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border-none mt-1 sm:mt-0">
                       {mla.party}
                     </Badge>
                   </div>
@@ -240,7 +295,7 @@ export default function LeaderboardPage() {
                   className="pl-11 h-11 bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-black dark:text-white rounded-md w-full"
                 />
               </div>
-              
+
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full lg:w-auto">
                 <TabsList className="grid w-full grid-cols-3 bg-gray-100 dark:bg-gray-900/50 p-1 rounded-lg">
                   <TabsTrigger value="cities" className="flex items-center justify-center space-x-2 data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:text-black dark:data-[state=active]:text-white data-[state=inactive]:text-gray-500 dark:data-[state=inactive]:text-gray-400 rounded-md px-3 py-1.5 text-sm font-medium transition-all">
