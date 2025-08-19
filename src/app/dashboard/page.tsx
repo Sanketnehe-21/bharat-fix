@@ -7,7 +7,7 @@ import { Camera, MapPin, TrendingUp, AlertCircle, CheckCircle, Clock, BarChart3 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
   asChild?: boolean;
-  variant?: string; 
+  variant?: string;
   size?: string;
 }
 
@@ -27,55 +27,85 @@ const CardContent = ({ children, className, ...props }: { children: ReactNode, c
 const CardDescription = ({ children, className, ...props }: { children: ReactNode, className?: string }) => <p className={className} {...props}>{children}</p>;
 const Badge = ({ children, className, ...props }: { children: ReactNode, className?: string }) => <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${className}`} {...props}>{children}</span>;
 
-const Select = ({ children, value, onValueChange }: { children: ReactNode[], value: string, onValueChange: (value: string) => void }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    
-    const getSelectedLabel = () => {
-        let selectedLabel = '';
-        React.Children.forEach((children[1] as React.ReactElement)?.props.children, (item: unknown) => {
-            if (React.isValidElement(item) && item.props && typeof item.props === 'object' && 'value' in item.props) {
-                const reactItem = item as React.ReactElement<{ value: string; children: ReactNode }>;
-                if (reactItem.props.value === value) {
-                    selectedLabel = reactItem.props.children as string;
-                }
-            }
-        });
-        return selectedLabel || (children[0] as React.ReactElement).props.children;
-    };
-
-    return (
-        <div className="relative">
-            <div onClick={() => setIsOpen(!isOpen)} className="cursor-pointer">
-                {React.cloneElement(children[0] as React.ReactElement, { children: getSelectedLabel() })}
-            </div>
-            {isOpen && (
-                <div 
-                    onMouseLeave={() => setIsOpen(false)}
-                    className="absolute z-10 mt-1 w-full border rounded-md shadow-lg bg-white dark:bg-gray-800"
-                >
-                    {React.Children.map((children[1] as React.ReactElement).props.children, (item: unknown) => {
-                        if (React.isValidElement(item)) {
-                            const reactItem = item as React.ReactElement<{ value: string; onClick?: () => void }>;
-                            return React.cloneElement(reactItem, {
-                                onClick: () => {
-                                    onValueChange(reactItem.props.value);
-                                    setIsOpen(false);
-                                }
-                            });
-                        }
-                        return item;
-                    })}
-                </div>
-            )}
-        </div>
-    );
-};
-
 const SelectTrigger = ({ children, className }: { children: ReactNode, className?: string }) => <div className={`border rounded-md px-3 py-2 ${className}`}>{children}</div>;
 const SelectValue = ({ placeholder }: { placeholder: string }) => <span>{placeholder}</span>;
 const SelectContent = ({ children, className }: { children: ReactNode, className?: string }) => <div className={className}>{children}</div>;
 const SelectItem = ({ children, value, className, onClick }: { children: ReactNode, value: string, className?: string, onClick?: () => void }) => <div onClick={onClick} className={`cursor-pointer px-3 py-2 ${className}`}>{children}</div>;
 
+const Select = ({ children, value, onValueChange }: { children: ReactNode, value: string, onValueChange: (value: string) => void }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const childElements = React.Children.toArray(children).filter(React.isValidElement);
+  const triggerElement = childElements[0];
+  const contentElement = childElements[1];
+
+  const getSelectedLabel = () => {
+    let selectedLabel: ReactNode = null;
+
+    if (React.isValidElement<{ children?: ReactNode }>(contentElement) && contentElement.props.children) {
+      const items = React.Children.toArray(contentElement.props.children);
+      const selectedItem = items.find(child => {
+        if (React.isValidElement<{ value: string }>(child)) {
+          return child.props.value === value;
+        }
+        return false;
+      });
+
+      if (React.isValidElement<{ children?: ReactNode }>(selectedItem)) {
+        selectedLabel = selectedItem.props.children;
+      }
+    }
+
+    if (selectedLabel) {
+      return selectedLabel;
+    }
+
+    if (React.isValidElement<{ children?: ReactNode }>(triggerElement) && triggerElement.props.children) {
+      const triggerChildren = React.Children.toArray(triggerElement.props.children);
+      const selectValue = triggerChildren.find(
+        (child) => React.isValidElement(child) && child.type === SelectValue
+      );
+
+      if (React.isValidElement<{ placeholder?: string }>(selectValue)) {
+        return selectValue.props.placeholder || "Select...";
+      }
+    }
+
+    return 'Select...';
+  };
+
+  return (
+    <div className="relative">
+      <div onClick={() => setIsOpen(!isOpen)} className="cursor-pointer">
+        {React.isValidElement<{ children?: ReactNode }>(triggerElement)
+          ? React.cloneElement(triggerElement, { children: getSelectedLabel() })
+          : triggerElement}
+      </div>
+      {isOpen && (
+        <div
+          onMouseLeave={() => setIsOpen(false)}
+          className="absolute z-10 mt-1 w-full border rounded-md shadow-lg bg-white dark:bg-gray-800"
+        >
+          {React.isValidElement<{ children?: ReactNode }>(contentElement)
+            ? React.Children.map(contentElement.props.children, (item: unknown) => {
+              if (React.isValidElement<{ value: string; onClick?: () => void }>(item)) {
+                return React.cloneElement(item, {
+                  onClick: () => {
+                    onValueChange(item.props.value);
+                    setIsOpen(false);
+                    item.props.onClick?.();
+                  }
+                });
+              }
+              return item;
+            })
+            : null
+          }
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default function DashboardPage() {
   const [selectedCategory, setSelectedCategory] = useState("all")
@@ -186,7 +216,7 @@ export default function DashboardPage() {
                   Track the status and progress of reported civic issues.
                 </CardDescription>
               </div>
-              
+
               <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
                 <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                   <SelectTrigger className="w-full sm:w-48 bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-black dark:text-white">
@@ -203,7 +233,7 @@ export default function DashboardPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                
+
                 <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                   <SelectTrigger className="w-full sm:w-48 bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-black dark:text-white">
                     <SelectValue placeholder="Status" />
@@ -219,7 +249,7 @@ export default function DashboardPage() {
               </div>
             </div>
           </CardHeader>
-          
+
           <CardContent className="p-4 sm:p-6">
             <div className="space-y-4">
               {filteredIssues.length > 0 ? (
@@ -255,7 +285,7 @@ export default function DashboardPage() {
                             </div>
                           </div>
                         </div>
-                        
+
                         <div className="flex-shrink-0 self-start sm:self-center">
                           <Button variant="outline" size="sm" className="text-yellow-600 border-yellow-500 hover:bg-yellow-500 hover:text-white dark:text-yellow-400 dark:border-yellow-400 dark:hover:bg-yellow-400 dark:hover:text-black rounded-md px-3 py-1 text-sm">
                             View Details
@@ -275,7 +305,7 @@ export default function DashboardPage() {
             </div>
           </CardContent>
         </Card>
-        
+
         <div className="mt-10 text-center">
           <Button size="lg" className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 rounded-lg px-6 py-3" asChild>
             <Link href="/report" className="flex items-center justify-center">
