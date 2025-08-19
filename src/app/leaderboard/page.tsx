@@ -66,7 +66,7 @@ const Tabs = ({ children, value, onValueChange, ...props }: TabsProps) => (
       if (child.type === TabsList) {
         return React.cloneElement(child as React.ReactElement<TabsListProps>, { activeTab: value, setActiveTab: onValueChange });
       }
-      if (child.type === TabsContent && child.props.value === value) {
+      if (child.type === TabsContent && (child.props as TabsContentProps).value === value) {
         return child;
       }
       return null;
@@ -95,7 +95,7 @@ const TabsTrigger = ({ children, value, className, activeTab, setActiveTab }: Ta
   </button>
 );
 
-const TabsContent = ({ children }: TabsContentProps) => <div>{children}</div>;
+const TabsContent = ({ children, value }: TabsContentProps) => <div data-value={value}>{children}</div>;
 
 export default function LeaderboardPage() {
   const [searchQuery, setSearchQuery] = useState("")

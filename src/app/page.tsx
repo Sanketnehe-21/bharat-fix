@@ -1,49 +1,62 @@
 "use client"
 
-import { useState, useEffect } from "react"
-// Using 'next/link' is standard in Next.js, but for a standalone React app, you might use react-router-dom's Link.
-// This code assumes a Next.js environment as per the original.
+import React, { useState, useEffect, ReactNode } from "react"
 import Link from "next/link"
-// Importing icons from lucide-react. Ensure this library is installed.
 import { Camera, TrendingUp, Zap, Award, BarChart3, ChevronRight, Star, MapPin, Users } from "lucide-react"
 
-// These are placeholder components for ShadCN UI.
-// In a real app, you would have these components defined or installed.
-const Button = ({ children, className, asChild, ...props }) => {
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  children: ReactNode;
+  asChild?: boolean;
+  variant?: string;
+  size?: string;
+}
+
+interface DivProps extends React.HTMLAttributes<HTMLDivElement> {
+  children: ReactNode;
+  className?: string;
+}
+
+interface HeadingProps extends React.HTMLAttributes<HTMLHeadingElement> {
+  children: ReactNode;
+  className?: string;
+}
+
+interface ParagraphProps extends React.HTMLAttributes<HTMLParagraphElement> {
+  children: ReactNode;
+  className?: string;
+}
+
+const Button = ({ children, className, asChild, ...props }: ButtonProps) => {
   const Comp = asChild ? 'div' : 'button';
-  return <Comp className={className} {...props}>{children}</Comp>;
+  return <Comp className={className} {...props as any}>{children}</Comp>;
 };
-const Card = ({ children, className, ...props }) => <div className={className} {...props}>{children}</div>;
-const CardHeader = ({ children, className, ...props }) => <div className={className} {...props}>{children}</div>;
-const CardTitle = ({ children, className, ...props }) => <h3 className={className}>{children}</h3>;
-const CardContent = ({ children, className, ...props }) => <div className={className} {...props}>{children}</div>;
-const CardDescription = ({ children, className, ...props }) => <p className={className}>{children}</p>;
+const Card = ({ children, className, ...props }: DivProps) => <div className={className} {...props}>{children}</div>;
+const CardHeader = ({ children, className, ...props }: DivProps) => <div className={className} {...props}>{children}</div>;
+const CardTitle = ({ children, className, ...props }: HeadingProps) => <h3 className={className}>{children}</h3>;
+const CardContent = ({ children, className, ...props }: DivProps) => <div className={className} {...props}>{children}</div>;
+const CardDescription = ({ children, className, ...props }: ParagraphProps) => <p className={className}>{children}</p>;
 
 
 export default function HomePage() {
   const [isVisible, setIsVisible] = useState(false)
   const [currentFeature, setCurrentFeature] = useState(0)
 
-  // Effect for initial animation and feature card cycling
   useEffect(() => {
     setIsVisible(true)
     
     const interval = setInterval(() => {
-      // Cycle through the 3 features every 3 seconds
       setCurrentFeature((prev) => (prev + 1) % 3)
     }, 3000)
 
-    // Cleanup interval on component unmount
     return () => clearInterval(interval)
   }, [])
 
-  // Data for the features section
   const features = [
     {
       icon: Zap,
       title: "AI-Powered Issue Detection",
       description: "Advanced machine learning algorithms automatically identify and categorize civic issues from photos and reports.",
-      color: "from-yellow-500 to-orange-500" // Updated color for better visibility
+      color: "from-yellow-500 to-orange-500"
     },
     {
       icon: Award,
@@ -59,7 +72,6 @@ export default function HomePage() {
     }
   ]
 
-  // Data for the leaderboard section
   const topCities = [
     { name: "Mumbai", points: 15420, issues: 89, rank: 1 },
     { name: "Delhi", points: 12850, issues: 76, rank: 2 },
@@ -70,10 +82,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-black text-gray-800 dark:text-gray-200">
-      {/* Hero Section */}
-      {/* Responsive adjustments: Adjusted min-height for mobile for better viewing on smaller screens. */}
       <section className="relative min-h-[80vh] md:min-h-[90vh] flex items-center justify-center overflow-hidden bg-white dark:bg-black">
-        {/* Animated Background */}
         <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 via-green-500/10 to-blue-500/10">
           <div className="absolute inset-0 opacity-30">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(255,153,51,0.1)_1px,transparent_0)] bg-[length:20px_20px]"></div>
@@ -82,7 +91,6 @@ export default function HomePage() {
         
         <div className="relative z-10 text-center px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
           <div className={`transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-            {/* Responsive Typography: Font sizes adjust from mobile (text-4xl) to tablet (sm:text-5xl) to desktop (lg:text-6xl) */}
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-black dark:text-white mb-6 leading-tight">
               Report.{" "}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-green-500">
@@ -90,11 +98,9 @@ export default function HomePage() {
               </span>{" "}
               Revive Your City.
             </h1>
-            {/* Responsive Typography: Text size adjusts for better readability on different screens. */}
             <p className="text-md sm:text-lg text-gray-700 dark:text-gray-300 mb-8 max-w-2xl mx-auto leading-relaxed">
               Gamified AI-powered civic improvement platform for India. Join thousands of citizens making their cities better, one issue at a time.
             </p>
-            {/* Responsive Layout: Buttons stack vertically on mobile (flex-col) and switch to a horizontal layout on small screens and up (sm:flex-row). */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button 
                 size="lg" 
@@ -121,7 +127,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Floating Elements: These are hidden on small screens (hidden) and appear on large screens (lg:block) to avoid clutter. */}
         <div className="absolute top-20 left-10 hidden lg:block animate-bounce">
           <div className="w-4 h-4 bg-yellow-500 rounded-full opacity-60"></div>
         </div>
@@ -130,8 +135,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Features Section */}
-      {/* Responsive Spacing: Padding and vertical spacing (py) adjust for different screen sizes. */}
       <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
@@ -143,7 +146,6 @@ export default function HomePage() {
             </p>
           </div>
 
-          {/* Responsive Grid: Stacks to a single column on mobile (grid-cols-1) and becomes a 3-column grid on medium screens (md:grid-cols-3). */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
             {features.map((feature, index) => (
               <Card 
@@ -172,7 +174,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Leaderboard Preview Section */}
       <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-white dark:bg-black">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
@@ -186,7 +187,6 @@ export default function HomePage() {
 
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
-              {/* Responsive Layout: Stacks on mobile, row on larger screens. */}
               <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                 <h3 className="text-xl font-semibold text-black dark:text-white">Current Rankings</h3>
                 <Link 
@@ -199,12 +199,10 @@ export default function HomePage() {
               </div>
             </div>
             
-            {/* Responsive Table: The container allows horizontal scrolling on small screens to prevent layout breaking. */}
             <div className="overflow-x-auto">
               <table className="w-full text-sm sm:text-base">
                 <thead className="bg-gray-100 dark:bg-gray-700/50">
                   <tr>
-                    {/* Responsive Spacing: Padding is adjusted for mobile vs. desktop. */}
                     <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">Rank</th>
                     <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">City</th>
                     <th className="px-4 py-3 sm:px-6 sm:py-4 text-left text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">Points</th>
@@ -261,7 +259,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CTA Section */}
       <section className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-yellow-500 to-green-500">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6">
